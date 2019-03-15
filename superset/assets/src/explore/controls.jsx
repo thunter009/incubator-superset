@@ -2406,33 +2406,17 @@ export const controls = {
   },
 
   x_intercept: {
-    type: 'SelectControl',
+    ...metric,
     label: t('X-Intercept Line'),
-    choices: formatSelectOptions(['mean', 'median']),
-    renderTrigger: false,
-    freeForm: true,
-    clearable: true,
     description: t('Display X-intercept (vertical) line based on supplied metric'),
-    default: 'mean',
+    default: null,
   },
 
-  // x_intercept: {
-  //   ...metric,
-  //   label: t('X-Intercept Line'),
-  //   description: t('Display X-intercept (vertical) line based on supplied metric'),
-  //   default: null,
-  // },
-
   y_intercept: {
-    type: 'SelectControl',
+    ...metric,
     label: t('Y-intercept Line'),
-    choices: formatSelectOptions(['mean', 'median']),
-    clearable: true,
-    freeForm: true,
-    renderTrigger: false,
     description: t('Display Y-intercept (horizontal) line based on supplied metric'),
-    default: 'mean',
-    tabOverride: false,
+    default: null,
   },
 };
 export default controls;

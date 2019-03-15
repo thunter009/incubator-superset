@@ -997,10 +997,8 @@ class BubbleViz(NVD3Viz):
                 'values': v})
 
         if self.y_intercept:
-            if self.y_intercept == 'mean':
-                y_intercept = df['y'].mean()
-            elif self.y_intercept == 'median':
-                y_intercept = df['y'].median()
+            df['y_intercept'] = df[[utils.get_metric_name(self.y_intercept)]]
+            y_intercept = df['y_intercept'].mean()
             
             chart_data.append(
                 {
@@ -1012,10 +1010,8 @@ class BubbleViz(NVD3Viz):
             )
 
         if self.x_intercept:
-            if self.x_intercept == 'mean':
-                x_intercept = df['x'].mean()
-            elif self.x_intercept == 'median':
-                x_intercept = df['x'].median()
+            df['x_intercept'] = df[[utils.get_metric_name(self.x_intercept)]]
+            x_intercept = df['x_intercept'].mean()
             
             chart_data.append(
                 {

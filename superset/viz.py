@@ -975,6 +975,8 @@ class BubbleViz(NVD3Viz):
             self.z_metric,
             self.x_metric,
             self.y_metric,
+            self.x_intercept,
+            self.y_intercept,
         ]
         if not all(d['metrics'] + [self.entity]):
             raise Exception(_('Pick a metric for x, y and size'))

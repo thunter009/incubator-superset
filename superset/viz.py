@@ -1024,7 +1024,7 @@ class BubbleViz(NVD3Viz):
             
             chart_data.append(
                 {
-                    'key': 'Y-Axis',
+                    'key': 'Y-Intercept',
                     'values': [],
                     'slope': 0.0000000000000001,
                     'intercept': y_intercept,
@@ -1037,7 +1037,7 @@ class BubbleViz(NVD3Viz):
             
             chart_data.append(
                 {
-                    'key': "X-Axis",
+                    'key': "X-Intercept",
                     'values': [],
                     'slope': 10000,
                     'intercept': -(10000 * x_intercept),

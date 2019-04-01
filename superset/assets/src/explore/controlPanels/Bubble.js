@@ -45,6 +45,14 @@ export default {
       ],
     },
     {
+      label: t('Bubble Label Controls'),
+      expanded: true,
+      controlSetRows: [
+        ['bubble_labels_filter'],
+        ['show_bubble_labels'],
+      ],
+    },
+    {
       label: t('X Axis'),
       expanded: true,
       controlSetRows: [

@@ -59,6 +59,7 @@ export default {
         ['x_axis_label', 'left_margin'],
         ['x_axis_format', 'x_ticks_layout'],
         ['x_log_scale', 'x_axis_showminmax'],
+        ['x_axis_bounds'],
       ],
     },
     {
@@ -68,6 +69,7 @@ export default {
         ['y_axis_label', 'bottom_margin'],
         ['y_axis_format', null],
         ['y_log_scale', 'y_axis_showminmax'],
+        ['y_axis_bounds'],
       ],
     },
   ],

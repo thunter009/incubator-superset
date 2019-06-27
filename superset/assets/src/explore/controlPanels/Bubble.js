@@ -32,6 +32,7 @@ export default {
         ['size'],
         ['max_bubble_size'],
         ['limit', null],
+        ['x_intercept', 'y_intercept'],
       ],
     },
     {

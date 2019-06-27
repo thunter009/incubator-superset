@@ -2406,5 +2406,19 @@ export const controls = {
     description: t('Whether to normalize the histogram'),
     default: false,
   },
+
+  x_intercept: {
+    ...metric,
+    label: t('X-Intercept Line'),
+    description: t('Display X-intercept (vertical) line based on supplied metric'),
+    default: null,
+  },
+
+  y_intercept: {
+    ...metric,
+    label: t('Y-intercept Line'),
+    description: t('Display Y-intercept (horizontal) line based on supplied metric'),
+    default: null,
+  },
 };
 export default controls;

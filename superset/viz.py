@@ -1,4 +1,4 @@
-# Licensed to the Apache Software Foundation (ASF) under one
+
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
 # regarding copyright ownership.  The ASF licenses this file
@@ -971,7 +971,70 @@ class BubbleViz(NVD3Viz):
             series[row["group"]].append(row)
         chart_data = []
         for k, v in series.items():
-            chart_data.append({"key": k, "values": v})
+            chart_data.append({
+                'key': k,
+                'values': v})
+
+        if self.y_intercept:
+            if self.y_intercept == 'mean':
+                y_intercept = df['y'].mean()
+            elif self.y_intercept == 'median':
+                y_intercept = df['y'].median()
+            
+            chart_data.append(
+                {
+                    'key': 'Y-Axis',
+                    'values': [],
+                    'slope': 0.0000000000000001,
+                    'intercept': y_intercept,
+                }
+            )
+
+        if self.x_intercept:
+            if self.x_intercept == 'mean':
+                x_intercept = df['x'].mean()
+            elif self.x_intercept == 'median':
+                x_intercept = df['x'].median()
+            
+            chart_data.append(
+                {
+                    'key': "X-Axis",
+                    'values': [],
+                    'slope': 10000,
+                    'intercept': -(10000 * x_intercept),
+                }
+            )
+
+            chart_data.append({
+                'key': k,
+                'values': v})
+
+        if self.y_intercept:
+            df['y_intercept'] = df[[utils.get_metric_name(self.y_intercept)]]
+            y_intercept = df['y_intercept'].mean()
+            
+            chart_data.append(
+                {
+                    'key': 'Y-Axis',
+                    'values': [],
+                    'slope': 0.0000000000000001,
+                    'intercept': y_intercept,
+                }
+            )
+
+        if self.x_intercept:
+            df['x_intercept'] = df[[utils.get_metric_name(self.x_intercept)]]
+            x_intercept = df['x_intercept'].mean()
+            
+            chart_data.append(
+                {
+                    'key': "X-Axis",
+                    'values': [],
+                    'slope': 10000,
+                    'intercept': -(10000 * x_intercept),
+                }
+            )
+
         return chart_data
 
 

@@ -957,13 +957,14 @@ class BubbleViz(NVD3Viz):
         self.x_intercept = form_data.get('x_intercept')
         self.y_intercept = form_data.get('y_intercept')
         d['row_limit'] = form_data.get('limit')
-        d['metrics'] = [
+
+        d['metrics'] = list([
             self.z_metric,
             self.x_metric,
             self.y_metric,
             self.x_intercept,
-            self.y_intercept,
-        ]
+            self.y_intercept
+        ])
         if not all(d['metrics'] + [self.entity]):
             raise Exception(_('Pick a metric for x, y and size'))
         return d

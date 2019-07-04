@@ -29,7 +29,7 @@ export default {
         ['x'],
         ['y'],
         ['adhoc_filters'],
-        ['size'],
+        ['size',],
         ['max_bubble_size'],
         ['limit', null],
       ],
@@ -49,6 +49,7 @@ export default {
         ['x_axis_label', 'left_margin'],
         ['x_axis_format', 'x_ticks_layout'],
         ['x_log_scale', 'x_axis_showminmax'],
+        ['x_intercept'],
       ],
     },
     {
@@ -58,12 +59,13 @@ export default {
         ['y_axis_label', 'bottom_margin'],
         ['y_axis_format', null],
         ['y_log_scale', 'y_axis_showminmax'],
+        ['y_intercept']
       ],
     },
   ],
   controlOverrides: {
     color_scheme: {
-      renderTrigger: false,
+      renderTrigger: true,
     },
   },
 };

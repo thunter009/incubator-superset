@@ -957,20 +957,27 @@ class BubbleViz(NVD3Viz):
 
     def query_obj(self):
         form_data = self.form_data
-        d = super().query_obj()
-        d["groupby"] = [form_data.get("entity")]
-        if form_data.get("series"):
-            d["groupby"].append(form_data.get("series"))
-        self.x_metric = form_data.get("x")
-        self.y_metric = form_data.get("y")
-        self.z_metric = form_data.get("size")
-        self.entity = form_data.get("entity")
-        self.series = form_data.get("series") or self.entity
-        d["row_limit"] = form_data.get("limit")
-
-        d["metrics"] = list(set([self.z_metric, self.x_metric, self.y_metric]))
-        if not all(d["metrics"] + [self.entity]):
-            raise Exception(_("Pick a metric for x, y and size"))
+        d = super(BubbleViz, self).query_obj()
+        d['groupby'] = [
+            form_data.get('entity'),
+        ]
+        if form_data.get('series'):
+            d['groupby'].append(form_data.get('series'))
+        self.x_metric = form_data.get('x')
+        self.y_metric = form_data.get('y')
+        self.z_metric = form_data.get('size')
+        self.entity = form_data.get('entity')
+        self.series = form_data.get('series') or self.entity
+        self.x_intercept = form_data.get('x_intercept')
+        self.y_intercept = form_data.get('y_intercept')
+        d['row_limit'] = form_data.get('limit')
+        d['metrics'] = [
+            self.z_metric,
+            self.x_metric,
+            self.y_metric,
+        ]
+        if not all(d['metrics'] + [self.entity]):
+            raise Exception(_('Pick a metric for x, y and size'))
         return d
 
     def get_data(self, df):
@@ -985,7 +992,40 @@ class BubbleViz(NVD3Viz):
             series[row["group"]].append(row)
         chart_data = []
         for k, v in series.items():
-            chart_data.append({"key": k, "values": v})
+            chart_data.append({
+                'key': k,
+                'values': v})
+
+        if self.y_intercept:
+            if self.y_intercept == 'mean':
+                y_intercept = df['y'].mean()
+            elif self.y_intercept == 'median':
+                y_intercept = df['y'].median()
+            
+            chart_data.append(
+                {
+                    'key': 'Y-Axis',
+                    'values': [],
+                    'slope': 0.0000000000000001,
+                    'intercept': y_intercept,
+                }
+            )
+
+        if self.x_intercept:
+            if self.x_intercept == 'mean':
+                x_intercept = df['x'].mean()
+            elif self.x_intercept == 'median':
+                x_intercept = df['x'].median()
+            
+            chart_data.append(
+                {
+                    'key': "X-Axis",
+                    'values': [],
+                    'slope': 10000,
+                    'intercept': -(10000 * x_intercept),
+                }
+            )
+
         return chart_data
 
 

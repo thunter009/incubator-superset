@@ -2404,5 +2404,35 @@ export const controls = {
     description: t('Whether to normalize the histogram'),
     default: false,
   },
+
+  x_intercept: {
+    type: 'SelectControl',
+    label: t('X-Intercept Line'),
+    choices: formatSelectOptions(['mean', 'median']),
+    renderTrigger: false,
+    freeForm: true,
+    clearable: true,
+    description: t('Display X-intercept (vertical) line based on supplied metric'),
+    default: 'mean',
+  },
+
+  // x_intercept: {
+  //   ...metric,
+  //   label: t('X-Intercept Line'),
+  //   description: t('Display X-intercept (vertical) line based on supplied metric'),
+  //   default: null,
+  // },
+
+  y_intercept: {
+    type: 'SelectControl',
+    label: t('Y-intercept Line'),
+    choices: formatSelectOptions(['mean', 'median']),
+    clearable: true,
+    freeForm: true,
+    renderTrigger: false,
+    description: t('Display Y-intercept (horizontal) line based on supplied metric'),
+    default: 'mean',
+    tabOverride: false,
+  },
 };
 export default controls;

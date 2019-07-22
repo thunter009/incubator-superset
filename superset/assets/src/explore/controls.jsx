@@ -726,6 +726,16 @@ export const controls = {
     }),
   },
 
+  text: {
+    type: 'SelectControl',
+    label: t('Text Column'),
+    validators: [v.nonEmpty],
+    description: t('Select the polygon column. Each row should contain JSON.array(N) of [longitude, latitude] points'),
+    mapStateToProps: state => ({
+      choices: columnChoices(state.datasource),
+    }),
+  },
+
   point_radius_scale: {
     type: 'SelectControl',
     freeForm: true,

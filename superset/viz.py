@@ -2499,6 +2499,30 @@ class DeckArc(BaseDeckGLViz):
         return {"features": d["features"], "mapboxApiKey": config.get("MAPBOX_API_KEY")}
 
 
+class DeckText(BaseDeckGLViz):
+
+    """deck.gl's TextLayer"""
+
+    viz_type = "deck_text"
+    verbose_name = _("Deck.gl - Text")
+
+    def query_obj(self):
+        d = super().query_obj()
+        d["columns"] += [self.form_data.get("text")]
+        return d
+
+    def get_properties(self, d):
+        # super().get_properties(d)
+        fd = self.form_data
+                    
+        # elevation = fd["point_radius_fixed"]["value"]
+        # type_ = fd["point_radius_fixed"]["type"]
+        # d["elevation"] = d.get(elevation) if type_ == "metric" else elevation
+        return {
+            "position": d.get("spatial"),
+        }
+
+
 class EventFlowViz(BaseViz):
 
     """A visualization to explore patterns in event sequences"""

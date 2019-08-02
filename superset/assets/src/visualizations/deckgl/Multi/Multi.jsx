@@ -28,6 +28,7 @@ import layerGenerators from '../layers';
 import { hexToRGB } from 'src/modules/colors';
 import { getScale } from '@superset-ui/color/lib/CategoricalColorNamespace';
 import { getBuckets } from '../utils';
+import sandboxedEval from 'src/modules/sandbox';
 
 export const containerTypes = {
   default: 'Default',
@@ -93,19 +94,89 @@ class DeckMulti extends React.PureComponent {
     return subSlices[mainLayerId] ? subSlices[mainLayerId].form_data : {};
   }
 
+  getScatterCategories(formData, data) {
+    const c = formData.color_picker || { r: 0, g: 0, b: 0, a: 1 };
+    const fixedColor = [c.r, c.g, c.b, 255 * c.a];
+    const colorFn = getScale(formData.color_scheme);
+    const categories = {};
+    data.forEach((d) => {
+      if (d.cat_color != null && !categories.hasOwnProperty(d.cat_color)) {
+        let color;
+        if (formData.dimension) {
+          color = hexToRGB(colorFn(d.cat_color), c.a * 255);
+        } else {
+          color = fixedColor;
+        }
+        categories[d.cat_color] = { color, enabled: true };
+      }
+    });
+    return categories;
+  }
+ 
   getCategories() {
-    const { payloads } = this.state;
+    const { payloads, subSlices } = this.state;
     const formData = this.getMainLayerFormData();
 
     const mainLayerId = this.props.formData.container_main;
     const payload = payloads[mainLayerId];
     if (payload) {
-      const fd = formData;
-      const metricLabel = fd.metric ? fd.metric.label || fd.metric : null;
-      const accessor = d => d[metricLabel];
-      return getBuckets(formData, payload.data.features, accessor);
+      let metricLabel;
+      let accessor;
+
+      switch (subSlices[mainLayerId].form_data.viz_type) {
+        case 'deck_polygon':
+          metricLabel = formData.metric ? formData.metric.label || formData.metric : null;
+          accessor = d => d[metricLabel];
+          return getBuckets(formData, payload.data.features, accessor);
+        case 'deck_scatter':
+          return this.getScatterCategories(formData, payload.data.features);
+        default:
+          return {};
+      }
     }
-    return [];
+    return {};
+  }
+
+  filterScatterPayload(formData, payload) {
+    let features = payload.data.features
+    ? [...payload.data.features]
+    : [];
+
+    // Add colors from categories or fixed color
+    features = this.addColor(features, formData);
+
+    // Apply user defined data mutator if defined
+    if (formData.js_data_mutator) {
+      const jsFnMutator = sandboxedEval(formData.js_data_mutator);
+      features = jsFnMutator(features);
+    }
+
+    /*
+    // Filter by time
+    if (values[0] === values[1] || values[1] === this.end) {
+      features = features.filter(d => d.__timestamp >= values[0] && d.__timestamp <= values[1]);
+    } else {
+      features = features.filter(d => d.__timestamp >= values[0] && d.__timestamp < values[1]);
+    }
+    */
+
+    // Show only categories selected in the legend
+    const cats = this.state.categories;
+    if (formData.dimension) {
+      features = features.filter(d => cats[d.cat_color] && cats[d.cat_color].enabled);
+    }
+
+    return {
+      ...payload,
+      data: { ...payload.data, features },
+    };
+  }
+
+  filterPayload(formData, payload) {
+    if (formData.viz_type === 'deck_scatter') {
+      return this.filterScatterPayload(formData, payload);
+    }
+    return payload;
   }
 
   loadLayers(formData, payload, viewport) {
@@ -133,7 +204,7 @@ class DeckMulti extends React.PureComponent {
         .then(({ json }) => {
           const layer = layerGenerators[subsliceCopy.form_data.viz_type](
             subsliceCopy.form_data,
-            json,
+            this.filterPayload(subsliceCopy.form_data, json),
             this.props.onAddFilter,
             this.props.setTooltip,
             [],

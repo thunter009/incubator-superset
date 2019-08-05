@@ -137,6 +137,19 @@ class DeckMulti extends React.PureComponent {
     return {};
   }
 
+  addColor(data, fd) {
+    const c = fd.color_picker || { r: 0, g: 0, b: 0, a: 1 };
+    const colorFn = getScale(fd.color_scheme);
+    return data.map((d) => {
+      let color;
+      if (fd.dimension) {
+        color = hexToRGB(colorFn(d.cat_color), c.a * 255);
+        return { ...d, color };
+      }
+      return d;
+    });
+  }
+
   filterScatterPayload(formData, payload) {
     let features = payload.data.features
     ? [...payload.data.features]
@@ -225,7 +238,9 @@ class DeckMulti extends React.PureComponent {
             },
           });
         })
-        .catch(() => {});
+        .catch((e) => {
+          console.log(e);
+        });
     });
   }
 

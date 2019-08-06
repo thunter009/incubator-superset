@@ -106,7 +106,6 @@ class DeckMulti extends React.PureComponent {
         categories[d.cat_color] = { color, enabled: true };
       }
     });
-    console.log(categories);
     return categories;
   }
 
@@ -175,7 +174,6 @@ class DeckMulti extends React.PureComponent {
 
   renderLegends(formData) {
     const { categories, subSlices } = this.state;
-    console.log(categories, subSlices);
     if (_.difference(Object.keys(categories), Object.keys(subSlices)).length) {
       return null;
     }

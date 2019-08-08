@@ -64,6 +64,7 @@ class DeckMulti extends React.PureComponent {
     };
     this.getLayers = this.getLayers.bind(this);
     this.onViewportChange = this.onViewportChange.bind(this);
+    this.onValuesChange = this.onValuesChange.bind(this);
   }
 
   componentDidMount() {
@@ -92,7 +93,11 @@ class DeckMulti extends React.PureComponent {
   }
 
   onValuesChange(values) {
-    console.log(values);
+    this.setState({
+      values: Array.isArray(values)
+        ? values
+        : [values, values + this.state.getStep(values)],
+    });
   }
 
   getScatterCategories(formData, data) {
@@ -123,13 +128,36 @@ class DeckMulti extends React.PureComponent {
   }
 
   getLayers(values) {
-    console.log('get layers');
+      const { subSlices, payloads, selectedItem } = this.state;
+      const layers = Object.keys(subSlices).map((key) => {
+        const subSlice = subSlices[key];
+        const payload = payloads[key];
+        const filteredPayload = this.filterPayload(subSlice.form_data, payload, values);
+        const vizType = subSlice.form_data.viz_type;
+        return layerGenerators[vizType](
+          subSlice.form_data,
+          filteredPayload,
+          this.props.onAddFilter,
+          this.props.setTooltip,
+          [],
+          this.props.onSelect,
+        );
+    });
+
+    if (selectedItem) {
+      layers.push(this.generateNewMarkerLayer());
+    }
+
+    return layers;
+  }
+
+  prepareData() {
     this.setState({ categories: {} });
-    const { subSlices, payloads, selectedItem } = this.state;
-    const layers = Object.keys(subSlices).map((key) => {
+    const { subSlices, payloads } = this.state;
+    
+    Object.keys(subSlices).map((key) => {
       const subSlice = subSlices[key];
       const payload = payloads[key];
-      const filteredPayload = this.filterPayload(subSlice.form_data, payload, values);
       const vizType = subSlice.form_data.viz_type;
       let categories;
       let metricLabel;
@@ -140,11 +168,11 @@ class DeckMulti extends React.PureComponent {
             subSlice.form_data.metric.label || subSlice.form_data.metric : null;
           accessor = d => d[metricLabel];
           categories = getBuckets(subSlice.form_data,
-            filteredPayload.data.features, accessor);
+            payload.data.features, accessor);
           break;
         case 'deck_scatter':
           categories = this.getScatterCategories(subSlice.form_data,
-            filteredPayload.data.features);
+            payload.data.features);
           break;
         default:
           categories = {};
@@ -156,22 +184,37 @@ class DeckMulti extends React.PureComponent {
           [subSlice.slice_id]: categories,
         },
       });
-
-      return layerGenerators[vizType](
-        subSlice.form_data,
-        filteredPayload,
-        this.props.onAddFilter,
-        this.props.setTooltip,
-        [],
-        this.props.onSelect,
-      );
     });
 
-    if (selectedItem) {
-      layers.push(this.generateNewMarkerLayer());
-    }
+    const timestamps = fp.flow([
+      fp.map(slicePayload => slicePayload.data.features || []),
+      fp.flattenDeep,
+      fp.map(f => f.__timestamp),
+      fp.filter(timestamp => !!timestamp),
+    ])(this.state.payloads);
+    // the granularity has to be read from the payload form_data, not the
+    // props formData which comes from the instantaneous controls state
+    const granularity = (
+      this.props.formData.time_grain_sqla ||
+      this.props.formData.granularity ||
+      'P1D'
+    );
 
-    return layers;
+    const {
+      start,
+      end,
+      getStep,
+      values,
+      disabled,
+    } = getPlaySliderParams(timestamps, granularity);
+
+    this.setState({
+      start,
+      end,
+      getStep,
+      values,
+      disabled,
+    });
   }
 
   showSingleCategory(category) {
@@ -313,6 +356,7 @@ class DeckMulti extends React.PureComponent {
           // this.updateSliderData();
           layersToLoad--;
           if (!layersToLoad) {
+            this.prepareData();
             this.setState({
               layersLoaded: true,
             });
@@ -379,31 +423,14 @@ class DeckMulti extends React.PureComponent {
       setControlValue,
     } = this.props;
 
-    const timestamps = fp.flow([
-      fp.map(slicePayload => slicePayload.data.features || []),
-      fp.flattenDeep,
-      fp.map(f => f.__timestamp),
-      fp.filter(timestamp => !!timestamp),
-    ])(this.state.payloads);
-    // the granularity has to be read from the payload form_data, not the
-    // props formData which comes from the instantaneous controls state
-    const granularity = (
-      this.props.formData.time_grain_sqla ||
-      this.props.formData.granularity ||
-      'P1D'
-    );
-
     const {
+      layersLoaded,
+      viewport: stateViewport,
       start,
       end,
       getStep,
       values,
       disabled,
-    } = getPlaySliderParams(timestamps, granularity);
-
-    const {
-      layersLoaded,
-      viewport: stateViewport,
     } = this.state;
 
     return (

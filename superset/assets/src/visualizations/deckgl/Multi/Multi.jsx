@@ -78,6 +78,7 @@ class DeckMulti extends React.PureComponent {
     if (hasChanges) {
       this.loadLayers(formData, payload);
     }
+    this.prepareData();
   }
 
   onViewportChange(viewport) {
@@ -154,8 +155,8 @@ class DeckMulti extends React.PureComponent {
   prepareData() {
     this.setState({ categories: {} });
     const { subSlices, payloads } = this.state;
-    
-    Object.keys(subSlices).map((key) => {
+
+    Object.keys(subSlices).forEach((key) => {
       const subSlice = subSlices[key];
       const payload = payloads[key];
       const vizType = subSlice.form_data.viz_type;
@@ -319,7 +320,6 @@ class DeckMulti extends React.PureComponent {
   }
 
   loadLayers(formData, payload, viewport) {
-    console.log('load layers');
     this.setState({ subSlices: {}, payloads: {}, viewport, layersLoaded: false });
     let layersToLoad = payload.data.slices.length;
     payload.data.slices.forEach((subslice) => {

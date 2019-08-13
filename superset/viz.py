@@ -2505,6 +2505,7 @@ class DeckText(BaseDeckGLViz):
 
     viz_type = "deck_text"
     verbose_name = _("Deck.gl - Text")
+    spatial_control_keys = ["spatial"]
 
     def query_obj(self):
         d = super().query_obj()
@@ -2512,14 +2513,10 @@ class DeckText(BaseDeckGLViz):
         return d
 
     def get_properties(self, d):
-        # super().get_properties(d)
         fd = self.form_data
-                    
-        # elevation = fd["point_radius_fixed"]["value"]
-        # type_ = fd["point_radius_fixed"]["type"]
-        # d["elevation"] = d.get(elevation) if type_ == "metric" else elevation
         return {
-            "position": d.get("spatial"),
+            "coordinates": d.get("spatial"),
+            "name": d.get(fd.get("text"))
         }
 
 

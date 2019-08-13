@@ -24,12 +24,7 @@ import { createCategoricalDeckGLComponent } from '../../factory';
 import TooltipRow from '../../TooltipRow';
 
 function getPoints(data) {
-    const points = [];
-    data.forEach((d) => {
-        points.push(d.sourcePosition);
-        points.push(d.targetPosition);
-    });
-    return points;
+    return data.map(d => d.coordinates);
 }
 
 function setTooltipContent(formData) {
@@ -43,15 +38,30 @@ function setTooltipContent(formData) {
     );
 }
 
+// TODO: make this real layer component
+
 export function getLayer(fd, payload, onAddFilter, setTooltip) {
     const data = payload.data.features;
     return new TextLayer({
         id: `text-layer-${fd.slice_id}`,
         data,
         getPosition: d => d.coordinates,
-        getText: d => d.name,
-        getSize: 32,
+        getText: (d) => {
+            const values = d.name.split(',');
+            const numItems = values.length;
+            const result = `${values[0]}`;
+            return numItems > 1 ? result + `(+${numItems - 1})` : result;
+        },
+        getSize: d => d.name.split(',').length + 20,
         getAngle: 0,
+        sizeUnits: 'meters',
+        getColor: (d) => {
+            let alpha = 255 * d.name.split(',').length / 60 + 50;
+            if (alpha > 255) {
+                alpha = 255;
+            }
+            return [255, 255, 255, alpha];
+        },
         getTextAnchor: 'middle',
         getAlignmentBaseline: 'center',
         ...commonLayerProps(fd, setTooltip, setTooltipContent(fd)),

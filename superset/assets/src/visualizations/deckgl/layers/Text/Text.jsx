@@ -17,55 +17,101 @@
  * under the License.
  */
 import { TextLayer } from 'deck.gl';
-import React from 'react';
-import { t } from '@superset-ui/translation';
+import { flow, countBy, entries, partialRight, maxBy, head, last } from 'lodash';
+import Supercluster from 'supercluster';
+
 import { commonLayerProps } from '../common';
-import { createCategoricalDeckGLComponent } from '../../factory';
-import TooltipRow from '../../TooltipRow';
+import { createDeckGLComponent } from '../../factory';
+
+const DEFAULT_SIZE = 40;
 
 function getPoints(data) {
     return data.map(d => d.coordinates);
 }
 
-function setTooltipContent(formData) {
-    return o => (
-      <div className="deckgl-tooltip">
-        <TooltipRow label={`${t('Longitude, Latitude)')}: `} value={`${o.object.sourcePosition[0]}, ${o.object.sourcePosition[1]}`} />
-        {
-            formData.dimension && <TooltipRow label={`${formData.dimension}: `} value={`${o.object.cat_color}`} />
-        }
-      </div>
-    );
+function setTooltipContent() {
+    // return o => (
+    //   <div className="deckgl-tooltip">
+    //     <TooltipRow label={`${t('Longitude, Latitude)')}: `}
+    //         value={`${o.object.sourcePosition[0]}, ${o.object.sourcePosition[1]}`} />
+    //     {
+    //         formData.dimension && <TooltipRow label={`${formData.dimension}: `} value={`${o.object.cat_color}`} />
+    //     }
+    //   </div>
+    // );
 }
 
-// TODO: make this real layer component
+function getText(d) {
+    if (d.properties && d.properties.cluster) {
+        return flow(
+            countBy,
+            entries,
+            partialRight(maxBy, last),
+            head,
+          )(d.properties.name.split(',')) + `(${d.properties.point_count_abbreviated})`;
+    }
+    const values = d.properties.name.split(',');
+    const numItems = values.length;
+    const result = `${values[0]}`;
+    return numItems > 1 ? result + `(+${numItems - 1})` : result;
+}
+
+function getSize(d) {
+    if (d.properties && d.properties.cluster) {
+        return Math.floor(d.properties.point_count / 1000) * 20 + DEFAULT_SIZE;
+    }
+
+    return DEFAULT_SIZE;
+}
+
+function getPosition(d) {
+    return d.coordinates || d.geometry.coordinates;
+}
+
+function getColor() {
+    // if (d.properties && d.properties.cluster) {
+    //     return Math.floor(d.properties.point_count / 1000) * 10;
+    // }
+
+    // let alpha = 255 * d.name.split(',').length / 60 + 50;
+    // if (alpha > 255) {
+    //     alpha = 255;
+    // }
+    return [255, 255, 85, 255];
+}
+
+export function indexClusters(payload) {
+    const clustersIndex = new Supercluster({
+        maxZoom: 16,
+        radius: 40,
+        map: props => ({ name: props.name }),
+        /* eslint no-param-reassign: ["error", { "props": false }] */
+        reduce: (accumulated, props) => {
+            accumulated.name = accumulated.name + ',' + props.name;
+        },
+     });
+    clustersIndex.load(
+        payload.data.features.map(d => ({
+        geometry: { coordinates: d.coordinates },
+        properties: d,
+        })),
+    );
+    return clustersIndex;
+}
 
 export function getLayer(fd, payload, onAddFilter, setTooltip) {
-    const data = payload.data.features;
     return new TextLayer({
         id: `text-layer-${fd.slice_id}`,
-        data,
-        getPosition: d => d.coordinates,
-        getText: (d) => {
-            const values = d.name.split(',');
-            const numItems = values.length;
-            const result = `${values[0]}`;
-            return numItems > 1 ? result + `(+${numItems - 1})` : result;
-        },
-        getSize: d => d.name.split(',').length + 20,
+        data: payload.data.features,
+        getPosition,
+        getText,
+        getSize,
         getAngle: 0,
-        sizeUnits: 'meters',
-        getColor: (d) => {
-            let alpha = 255 * d.name.split(',').length / 60 + 50;
-            if (alpha > 255) {
-                alpha = 255;
-            }
-            return [255, 255, 255, alpha];
-        },
+        getColor,
         getTextAnchor: 'middle',
-        getAlignmentBaseline: 'center',
+        getAlignmentBaseline: 'bottom',
         ...commonLayerProps(fd, setTooltip, setTooltipContent(fd)),
     });
 }
 
-export default createCategoricalDeckGLComponent(getLayer, getPoints);
+export default createDeckGLComponent(getLayer, getPoints);

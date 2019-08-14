@@ -35,7 +35,8 @@ function setTooltipContent() {
     //     <TooltipRow label={`${t('Longitude, Latitude)')}: `}
     //         value={`${o.object.sourcePosition[0]}, ${o.object.sourcePosition[1]}`} />
     //     {
-    //         formData.dimension && <TooltipRow label={`${formData.dimension}: `} value={`${o.object.cat_color}`} />
+    //         formData.dimension && <TooltipRow label={`${formData.dimension}: `}
+    //         value={`${o.object.cat_color}`} />
     //     }
     //   </div>
     // );

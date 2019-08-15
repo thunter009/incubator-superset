@@ -19,11 +19,23 @@
 import { TextLayer } from 'deck.gl';
 import { flow, countBy, entries, partialRight, maxBy, head, last } from 'lodash';
 import Supercluster from 'supercluster';
+import { CategoricalColorNamespace } from '@superset-ui/color';
+import { hexToRGB } from 'src/modules/colors';
 
 import { commonLayerProps } from '../common';
 import { createDeckGLComponent } from '../../factory';
 
+const { getScale } = CategoricalColorNamespace;
 const DEFAULT_SIZE = 40;
+
+export function getClusterName(name) {
+    return flow(
+        countBy,
+        entries,
+        partialRight(maxBy, last),
+        head,
+      )(name.split(','));
+}
 
 function getPoints(data) {
     return data.map(d => d.coordinates);
@@ -44,12 +56,7 @@ function setTooltipContent() {
 
 function getText(d) {
     if (d.properties && d.properties.cluster) {
-        return flow(
-            countBy,
-            entries,
-            partialRight(maxBy, last),
-            head,
-          )(d.properties.name.split(',')) + `(${d.properties.point_count_abbreviated})`;
+        return getClusterName(d.properties.name) + `(${d.properties.point_count_abbreviated})`;
     }
     const name = d.properties ? d.properties.name : d.name;
     const values = name.split(',');
@@ -64,6 +71,16 @@ function getSize(d) {
     }
 
     return DEFAULT_SIZE;
+}
+
+function getColor(d, fd) {
+    const cp = fd.color_picker;
+    if (fd.grade_colors) {
+        const colorFn = getScale(fd.color_scheme);
+        return hexToRGB(colorFn(d.cat_color), cp.a * 255);
+    }
+
+    return [cp.r, cp.g, cp.b, cp.a * 255];
 }
 
 function getPosition(d) {
@@ -90,7 +107,6 @@ export function indexClusters(payload) {
 }
 
 export function getLayer(fd, payload, onAddFilter, setTooltip) {
-    const c = fd.color_picker;
     return new TextLayer({
         id: `text-layer-${fd.slice_id}`,
         data: payload.data.features,
@@ -98,7 +114,7 @@ export function getLayer(fd, payload, onAddFilter, setTooltip) {
         getText,
         getSize,
         getAngle: 0,
-        getColor: () => [c.r, c.g, c.b, c.a * 255],
+        getColor: d => getColor(d, fd),
         getTextAnchor: 'middle',
         getAlignmentBaseline: 'bottom',
         ...commonLayerProps(fd, setTooltip, setTooltipContent(fd)),

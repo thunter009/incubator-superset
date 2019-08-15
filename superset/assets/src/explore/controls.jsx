@@ -743,6 +743,13 @@ export const controls = {
     default: false,
   },
 
+  grade_colors: {
+    type: 'CheckboxControl',
+    label: t('Grade colors'),
+    description: t('Makes each item in it\'s own color'),
+    default: false,
+  },
+
   point_radius_scale: {
     type: 'SelectControl',
     freeForm: true,

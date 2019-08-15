@@ -43,7 +43,8 @@ export default {
     {
       label: t('Text'),
       controlSetRows: [
-        ['color_picker', 'color_scheme'],
+        ['color_picker', 'grade_colors'],
+        [null, 'color_scheme'],
       ],
     },
     {

@@ -736,6 +736,13 @@ export const controls = {
     }),
   },
 
+  clusterize: {
+    type: 'CheckboxControl',
+    label: t('Clusterize'),
+    description: t('Clusterize text values'),
+    default: false,
+  },
+
   point_radius_scale: {
     type: 'SelectControl',
     freeForm: true,

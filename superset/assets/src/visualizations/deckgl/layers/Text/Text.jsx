@@ -51,7 +51,8 @@ function getText(d) {
             head,
           )(d.properties.name.split(',')) + `(${d.properties.point_count_abbreviated})`;
     }
-    const values = d.properties.name.split(',');
+    const name = d.properties ? d.properties.name : d.name;
+    const values = name.split(',');
     const numItems = values.length;
     const result = `${values[0]}`;
     return numItems > 1 ? result + `(+${numItems - 1})` : result;
@@ -70,7 +71,6 @@ function getPosition(d) {
 }
 
 export function indexClusters(payload) {
-    console.log('payload.data.features', payload.data.features);
     const clustersIndex = new Supercluster({
         maxZoom: 16,
         radius: 40,

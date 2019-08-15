@@ -28,7 +28,8 @@ export default {
       expanded: true,
       controlSetRows: [
         ['spatial', 'text'],
-        ['row_limit', 'filter_nulls'],
+        ['row_limit', 'clusterize'],
+        ['filter_nulls', null],
         ['adhoc_filters'],
       ],
     },

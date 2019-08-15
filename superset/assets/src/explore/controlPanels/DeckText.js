@@ -40,6 +40,12 @@ export default {
       ],
     },
     {
+      label: t('Text'),
+      controlSetRows: [
+        ['color_picker', 'color_scheme'],
+      ],
+    },
+    {
       label: t('Advanced'),
       controlSetRows: [
         ['js_columns'],

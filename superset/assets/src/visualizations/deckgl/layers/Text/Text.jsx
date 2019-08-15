@@ -69,19 +69,8 @@ function getPosition(d) {
     return d.coordinates || d.geometry.coordinates;
 }
 
-function getColor() {
-    // if (d.properties && d.properties.cluster) {
-    //     return Math.floor(d.properties.point_count / 1000) * 10;
-    // }
-
-    // let alpha = 255 * d.name.split(',').length / 60 + 50;
-    // if (alpha > 255) {
-    //     alpha = 255;
-    // }
-    return [255, 255, 85, 255];
-}
-
 export function indexClusters(payload) {
+    console.log('payload.data.features', payload.data.features);
     const clustersIndex = new Supercluster({
         maxZoom: 16,
         radius: 40,
@@ -101,6 +90,7 @@ export function indexClusters(payload) {
 }
 
 export function getLayer(fd, payload, onAddFilter, setTooltip) {
+    const c = fd.color_picker;
     return new TextLayer({
         id: `text-layer-${fd.slice_id}`,
         data: payload.data.features,
@@ -108,7 +98,7 @@ export function getLayer(fd, payload, onAddFilter, setTooltip) {
         getText,
         getSize,
         getAngle: 0,
-        getColor,
+        getColor: () => [c.r, c.g, c.b, c.a * 255],
         getTextAnchor: 'middle',
         getAlignmentBaseline: 'bottom',
         ...commonLayerProps(fd, setTooltip, setTooltipContent(fd)),

@@ -67,7 +67,7 @@ class AsyncSelect extends React.PureComponent {
 
     return SupersetClient.get({ endpoint: dataEndpoint })
       .then(({ json }) => {
-        const options = mutator ? mutator(json) : json;
+        const options = mutator ? mutator(json, this.state, this.setState.bind(this)) : json;
 
         this.setState({ options, isLoading: false });
 

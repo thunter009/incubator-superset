@@ -59,6 +59,7 @@
 import React from 'react';
 import { t } from '@superset-ui/translation';
 import { getCategoricalSchemeRegistry, getSequentialSchemeRegistry } from '@superset-ui/color';
+import { containerTypes } from 'src/visualizations/deckgl/Multi/Multi';
 
 import {
   formatSelectOptionsForRange,
@@ -217,6 +218,11 @@ function jsFunctionControl(label, description, extraDescr = null, height = 100, 
       readOnly: !state.common.conf.ENABLE_JAVASCRIPT_CONTROLS,
     }),
   };
+}
+
+function getDeckContainterOptions(state) {
+  console.log(state.deck_charts, state.form_data.deck_slices);
+  return [];
 }
 
 export const controls = {
@@ -2354,6 +2360,56 @@ export const controls = {
       return data.result.map(o => ({ value: o.id, label: o.slice_name }));
     },
   },
+
+  container_type: {
+    type: 'SelectControl',
+    label: t('Containter Type'),
+    clearable: false,
+    default: containerTypes.default,
+    description: t('Deck.gl container type'),
+    choices: Object.values(containerTypes)
+      .map(value => [value, value]),
+  },
+
+  container_main: {
+    type: 'SelectAsyncControl',
+    multi: false,
+    label: t('Containter Main Chart'),
+    default: null,
+    description: t('Chart that will incorporate container features'),
+    dataEndpoint: '/sliceasync/api/read?_flt_0_viz_type=deck_&_flt_7_viz_type=deck_multi',
+    placeholder: t('Select charts'),
+    onAsyncErrorMessage: t('Error while fetching charts'),
+    // mutator: (data) => {
+    //   if (!data || !data.result) {
+    //     return [];
+    //   }
+    //   return data.result.map(o => ({ value: o.id, label: o.slice_name }));
+    // },
+    mutator: (data, state, setState) => {
+      setState({
+        deck_charts: (!data || !data.result) ?
+          [] : data.result.map(o => ({ value: o.id, label: o.slice_name })),
+      });
+
+      return getDeckContainterOptions(state);
+    },
+    mapStateToProps: state => ({
+      options: getDeckContainterOptions(state),
+    }),
+  },
+
+  // container_main: {
+  //   type: 'SelectControl',
+  //   label: t('Containter Main Chart'),
+  //   clearable: false,
+  //   default: containerTypes.default,
+  //   description: t('Chart that will incorporate container features'),
+  //   mapStateToProps: state => ({
+  //     choices: (state.form_data.deck_slices) ?
+  //       state.form_data.deck_slices.map(slice => [slice, slice]) : [],
+  //   }),
+  // },
 
   js_data_mutator: jsFunctionControl(
     t('Javascript data interceptor'),

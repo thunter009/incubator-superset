@@ -25,6 +25,12 @@ import DeckGLContainer from '../DeckGLContainer';
 import { getExploreLongUrl } from '../../../explore/exploreUtils';
 import layerGenerators from '../layers';
 
+export const containerTypes = {
+  default: 'Default',
+  animatable: 'Animatable',
+  categorical: 'Categorical',
+};
+
 const propTypes = {
   formData: PropTypes.object.isRequired,
   payload: PropTypes.object.isRequired,
@@ -107,7 +113,6 @@ class DeckMulti extends React.PureComponent {
   }
 
   render() {
-    const { payload, formData, setControlValue } = this.props;
     const { subSlicesLayers } = this.state;
 
     const layers = Object.values(subSlicesLayers);

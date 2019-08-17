@@ -27,6 +27,7 @@ export default {
       controlSetRows: [
         ['mapbox_style', 'viewport'],
         ['deck_slices', null],
+        ['container_type', 'container_main'],
       ],
     },
     {

@@ -2380,23 +2380,23 @@ export const controls = {
     dataEndpoint: '/sliceasync/api/read?_flt_0_viz_type=deck_&_flt_7_viz_type=deck_multi',
     placeholder: t('Select charts'),
     onAsyncErrorMessage: t('Error while fetching charts'),
-    // mutator: (data) => {
-    //   if (!data || !data.result) {
-    //     return [];
-    //   }
-    //   return data.result.map(o => ({ value: o.id, label: o.slice_name }));
-    // },
-    mutator: (data, state, setState) => {
-      setState({
-        deck_charts: (!data || !data.result) ?
-          [] : data.result.map(o => ({ value: o.id, label: o.slice_name })),
-      });
-
-      return getDeckContainterOptions(state);
+    mutator: (data) => {
+      if (!data || !data.result) {
+        return [];
+      }
+      return data.result.map(o => ({ value: o.id, label: o.slice_name }));
     },
-    mapStateToProps: state => ({
-      options: getDeckContainterOptions(state),
-    }),
+    // mutator: (data, state, setState) => {
+    //   setState({
+    //     deck_charts: (!data || !data.result) ?
+    //       [] : data.result.map(o => ({ value: o.id, label: o.slice_name })),
+    //   });
+
+    //   return getDeckContainterOptions(state);
+    // },
+    // mapStateToProps: state => ({
+    //   options: getDeckContainterOptions(state),
+    // }),
   },
 
   // container_main: {

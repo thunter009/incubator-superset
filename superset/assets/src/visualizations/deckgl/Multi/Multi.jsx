@@ -20,10 +20,14 @@ import React from 'react';
 import _ from 'lodash';
 import PropTypes from 'prop-types';
 import { SupersetClient } from '@superset-ui/connection';
+import Legend from 'src/visualizations/Legend';
 
 import DeckGLContainer from '../DeckGLContainer';
 import { getExploreLongUrl } from '../../../explore/exploreUtils';
 import layerGenerators from '../layers';
+import { hexToRGB } from 'src/modules/colors';
+import { getScale } from '@superset-ui/color/lib/CategoricalColorNamespace';
+import { getBuckets } from '../utils';
 
 export const containerTypes = {
   default: 'Default',
@@ -49,7 +53,11 @@ const defaultProps = {
 class DeckMulti extends React.PureComponent {
   constructor(props) {
     super(props);
-    this.state = { subSlicesLayers: {} };
+    this.state = {
+      subSlices: {},
+      subSlicesLayers: {},
+      payloads: {},
+    };
     this.onViewportChange = this.onViewportChange.bind(this);
   }
 
@@ -70,8 +78,38 @@ class DeckMulti extends React.PureComponent {
     this.setState({ viewport });
   }
 
+  onSelected(viewport, selectedItem) {
+    this.setState({ viewport, selectedItem });
+  }
+
+  onHover({ x, y, object }) {
+    this.setState({ x, y, hoveredObject: object });
+  }
+
+  getMainLayerFormData() {
+    const { subSlices } = this.state;
+
+    const mainLayerId = this.props.formData.container_main;
+    return subSlices[mainLayerId] ? subSlices[mainLayerId].form_data : {};
+  }
+
+  getCategories() {
+    const { payloads } = this.state;
+    const formData = this.getMainLayerFormData();
+
+    const mainLayerId = this.props.formData.container_main;
+    const payload = payloads[mainLayerId];
+    if (payload) {
+      const fd = formData;
+      const metricLabel = fd.metric ? fd.metric.label || fd.metric : null;
+      const accessor = d => d[metricLabel];
+      return getBuckets(formData, payload.data.features, accessor);
+    }
+    return [];
+  }
+
   loadLayers(formData, payload, viewport) {
-    this.setState({ subSlicesLayers: {}, viewport });
+    this.setState({ subSlices: {}, subSlicesLayers: {}, viewport });
     payload.data.slices.forEach((subslice) => {
       // Filters applied to multi_deck are passed down to underlying charts
       // note that dashboard contextual information (filter_immune_slices and such) aren't
@@ -106,10 +144,71 @@ class DeckMulti extends React.PureComponent {
               ...this.state.subSlicesLayers,
               [subsliceCopy.slice_id]: layer,
             },
+            subSlices: {
+              ...this.state.subSlices,
+              [subsliceCopy.slice_id]: subsliceCopy,
+            },
+            payloads: {
+              ...this.state.payloads,
+              [subsliceCopy.slice_id]: json,
+            },
           });
         })
         .catch(() => {});
     });
+  }
+
+  toggleCategory(category) {
+    const categoryState = this.state.categories[category];
+    const categories = {
+      ...this.state.categories,
+      [category]: {
+        ...categoryState,
+        enabled: !categoryState.enabled,
+      },
+    };
+
+    // if all categories are disabled, enable all -- similar to nvd3
+    if (Object.values(categories).every(v => !v.enabled)) {
+      /* eslint-disable no-param-reassign */
+      Object.values(categories).forEach((v) => { v.enabled = true; });
+    }
+    this.setState({ categories });
+  }
+  showSingleCategory(category) {
+
+    const categories = { ...this.state.categories };
+    /* eslint-disable no-param-reassign */
+    Object.values(categories).forEach((v) => { v.enabled = false; });
+    categories[category].enabled = true;
+    this.setState({ categories });
+  }
+
+  renderContainer(layers) {
+    const { payload, formData, setControlValue } = this.props;
+    const viewport = this.state.viewport || this.props.viewport;
+
+    return (
+      <div style={{ position: 'relative' }}>
+        <DeckGLContainer
+          mapboxApiAccessToken={payload.data.mapboxApiKey}
+          viewport={viewport}
+          onViewportChange={this.onViewportChange}
+          layers={layers}
+          mapStyle={formData.mapbox_style}
+          setControlValue={setControlValue}
+        />
+        {formData.container_type === containerTypes.categorical &&
+          <Legend
+            categories={this.getCategories()}
+            toggleCategory={this.toggleCategory}
+            showSingleCategory={this.showSingleCategory}
+            position={this.getMainLayerFormData().legend_position}
+            format={this.getMainLayerFormData().legend_format}
+          />
+        }
+      </div>
+    );
   }
 
   render() {

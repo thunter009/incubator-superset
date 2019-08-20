@@ -17,27 +17,15 @@
  * under the License.
  */
 import { TextLayer } from 'deck.gl';
-import { flow, countBy, entries, partialRight, maxBy, head, last, filter } from 'lodash';
-import Supercluster from 'supercluster';
 import { CategoricalColorNamespace } from '@superset-ui/color';
 import { hexToRGB } from 'src/modules/colors';
 
 import { commonLayerProps } from '../common';
 import { createDeckGLComponent } from '../../factory';
+import { getClusterName } from './utils';
 
 const { getScale } = CategoricalColorNamespace;
 const DEFAULT_SIZE = 40;
-
-export function getClusterName(name) {
-  return name !== null
-    ? flow(
-      countBy,
-      entries,
-      partialRight(maxBy, last),
-      head,
-    )(name.split(','))
-    : null;
-}
 
 function getPoints(data) {
   return data.map(d => d.coordinates);
@@ -87,26 +75,6 @@ function getColor(d, fd) {
 
 function getPosition(d) {
   return d.coordinates || d.geometry.coordinates;
-}
-
-export function indexClusters(payload) {
-  const clustersIndex = new Supercluster({
-    maxZoom: 16,
-    radius: 40,
-    map: props => ({ name: props.name }),
-    /* eslint no-param-reassign: ["error", { "props": false }] */
-    reduce: (accumulated, props) => {
-      accumulated.name = accumulated.name + ',' + props.name;
-    },
-  });
-  let features = payload.data.features.map(d => ({
-    geometry: { coordinates: d.coordinates },
-    properties: d,
-  }));
-
-  features = filter(features, f => f.properties.name !== null);
-  clustersIndex.load(features);
-  return clustersIndex;
 }
 
 export function getLayer(fd, payload, onAddFilter, setTooltip) {

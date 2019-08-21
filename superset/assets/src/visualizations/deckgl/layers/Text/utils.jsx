@@ -1,15 +1,15 @@
-import { flow, countBy, entries, partialRight, maxBy, head, last, filter } from 'lodash';
+import { flow, countBy, entries, partialRight, maxBy, head, last, filter, isString } from 'lodash';
 import Supercluster from 'supercluster';
 
 export function getClusterName(name) {
-  return name !== null
+  return isString(name)
     ? flow(
       countBy,
       entries,
       partialRight(maxBy, last),
       head,
     )(name.split(','))
-    : null;
+    : name;
 }
 
 export function indexClusters(payload) {

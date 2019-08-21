@@ -50,7 +50,7 @@ function getText(d) {
     return getClusterName(d.properties.name) + `(${d.properties.point_count_abbreviated})`;
   }
   const name = d.properties ? d.properties.name : d.name;
-  const values = !isString(name) ? name.split(',') : [name];
+  const values = isString(name) ? name.split(',') : [name];
   const numItems = values.length;
   const result = `${values[0]}`;
   return numItems > 1 ? result + `(+${numItems - 1})` : result;

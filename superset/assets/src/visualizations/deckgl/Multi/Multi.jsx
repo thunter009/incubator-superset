@@ -64,6 +64,8 @@ class DeckMulti extends React.PureComponent {
     this.getLayers = this.getLayers.bind(this);
     this.onViewportChange = this.onViewportChange.bind(this);
     this.onValuesChange = this.onValuesChange.bind(this);
+    this.toggleCategory = this.toggleCategory.bind(this);
+    this.showSingleCategory = this.showSingleCategory.bind(this);
   }
 
   componentDidMount() {
@@ -217,21 +219,24 @@ class DeckMulti extends React.PureComponent {
     });
   }
 
-  showSingleCategory(category) {
-    const categories = { ...this.state.categories };
+  showSingleCategory(category, sliceId) {
+    const sliceCategories = { ...this.state.categories[sliceId] };
     /* eslint-disable no-param-reassign */
-    Object.values(categories).forEach((v) => { v.enabled = false; });
-    categories[category].enabled = true;
-    this.setState({ categories });
+    Object.values(sliceCategories).forEach((v) => { v.enabled = false; });
+    sliceCategories[category].enabled = true;
+    const updatedCategories = { ...this.state.categories };
+    updatedCategories[sliceId] = sliceCategories;
+    this.setState({ categories: updatedCategories });
   }
 
-  toggleCategory(category) {
-    const categoryState = this.state.categories[category];
+  toggleCategory(category, sliceId) {
+    const sliceCategories = this.state.categories[sliceId];
+    const selectedCategory = sliceCategories[category];
     const categories = {
-      ...this.state.categories,
+      ...sliceCategories,
       [category]: {
-        ...categoryState,
-        enabled: !categoryState.enabled,
+        ...selectedCategory,
+        enabled: !selectedCategory.enabled,
       },
     };
 
@@ -240,7 +245,9 @@ class DeckMulti extends React.PureComponent {
       /* eslint-disable no-param-reassign */
       Object.values(categories).forEach((v) => { v.enabled = true; });
     }
-    this.setState({ categories });
+    const updatedCategories = { ...this.state.categories };
+    updatedCategories[sliceId] = categories;
+    this.setState({ categories: updatedCategories });
   }
 
   generateNewMarkerLayer() {
@@ -404,6 +411,8 @@ class DeckMulti extends React.PureComponent {
           key={index}
           title={`${subSlices[key].slice_name} (${this.getLabel(subSlices[key])})`}
           inline
+          id={key}
+          title={`${subSlices[key].slice_name} (${this.getLabel(subSlices[key])})`}
           categories={categories[key]}
           toggleCategory={this.toggleCategory}
           showSingleCategory={this.showSingleCategory}

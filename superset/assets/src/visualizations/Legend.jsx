@@ -32,6 +32,7 @@ const propTypes = {
   position: PropTypes.oneOf([null, 'tl', 'tr', 'bl', 'br']),
   inline: PropTypes.bool,
   title: PropTypes.string,
+  id: PropTypes.string,
 };
 
 const defaultProps = {
@@ -42,6 +43,7 @@ const defaultProps = {
   position: 'tr',
   inline: false,
   title: null,
+  id: null,
 };
 
 export default class Legend extends React.PureComponent {
@@ -69,21 +71,28 @@ export default class Legend extends React.PureComponent {
   }
 
   render() {
-    const { title, inline } = this.props;
+    const {
+      title,
+      inline,
+      categories,
+      toggleCategory,
+      showSingleCategory,
+      id,
+    } = this.props;
 
-    if (Object.keys(this.props.categories).length === 0 || this.props.position === null) {
+    if (Object.keys(categories).length === 0 || this.props.position === null) {
       return null;
     }
 
-    const categories = Object.entries(this.props.categories).map(([k, v]) => {
+    const categoryList = Object.entries(categories).map(([k, v]) => {
       const style = { color: 'rgba(' + v.color.join(', ') + ')' };
       const icon = v.enabled ? '\u25FC' : '\u25FB';
       return (
         <li key={k}>
           <a
             href="#"
-            onClick={() => this.props.toggleCategory(k)}
-            onDoubleClick={() => this.props.showSingleCategory(k)}
+            onClick={() => toggleCategory(k, id)}
+            onDoubleClick={() => showSingleCategory(k, id)}
           >
             <span style={style}>{icon}</span> {this.formatCategoryLabel(k)}
           </a>
@@ -106,7 +115,7 @@ export default class Legend extends React.PureComponent {
     return (
       <div className={'legend'} style={style}>
         {!!title && <p>{title}</p>}
-        <ul className={'categories'}>{categories}</ul>
+        <ul className={'categories'}>{categoryList}</ul>
       </div>
     );
   }

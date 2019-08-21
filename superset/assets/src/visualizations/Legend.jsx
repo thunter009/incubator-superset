@@ -99,7 +99,7 @@ export default class Legend extends React.PureComponent {
       [horizontal]: '10px',
     };
 
-    if (this.props.inline) {
+    if (inline) {
       style = null;
     }
 

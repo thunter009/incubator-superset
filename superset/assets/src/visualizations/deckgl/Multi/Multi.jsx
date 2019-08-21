@@ -21,20 +21,17 @@ import _ from 'lodash';
 import PropTypes from 'prop-types';
 import { SupersetClient } from '@superset-ui/connection';
 import Legend from 'src/visualizations/Legend';
+import PropTypes from 'prop-types';
+import sandboxedEval from 'src/modules/sandbox';
+import { CategoricalColorNamespace } from '@superset-ui/color';
+import { hexToRGB } from 'src/modules/colors';
+import { IconLayer } from 'deck.gl';
+import { SupersetClient } from '@superset-ui/connection';
 
 import DeckGLContainer from '../DeckGLContainer';
 import { getExploreLongUrl } from '../../../explore/exploreUtils';
 import layerGenerators from '../layers';
-import { hexToRGB } from 'src/modules/colors';
 import { getBuckets } from '../utils';
-import sandboxedEval from 'src/modules/sandbox';
-import { CategoricalColorNamespace } from '@superset-ui/color';
-
-export const containerTypes = {
-  default: 'Default',
-  animatable: 'Animatable',
-  categorical: 'Categorical',
-};
 
 const { getScale } = CategoricalColorNamespace;
 
@@ -109,17 +106,19 @@ class DeckMulti extends React.PureComponent {
     return categories;
   }
 
-  addColor(data, fd) {
-    const c = fd.color_picker || { r: 0, g: 0, b: 0, a: 1 };
-    const colorFn = getScale(fd.color_scheme);
-    return data.map((d) => {
-      let color;
-      if (fd.dimension) {
-        color = hexToRGB(colorFn(d.cat_color), c.a * 255);
-        return { ...d, color };
-      }
-      return d;
-    });
+  getLabel(subSlice) {
+    const fd = subSlice.form_data;
+    if (fd.dimension) {
+      return fd.dimension;
+    }
+    return fd.metric ? fd.metric.label || fd.metric : null;
+  }
+
+  filterPayload(formData, payload) {
+    if (formData.viz_type === 'deck_scatter') {
+      return this.filterScatterPayload(formData, payload);
+    }
+    return payload;
   }
 
   filterScatterPayload(formData, payload) {
@@ -157,41 +156,17 @@ class DeckMulti extends React.PureComponent {
     };
   }
 
-  filterPayload(formData, payload) {
-    if (formData.viz_type === 'deck_scatter') {
-      return this.filterScatterPayload(formData, payload);
-    }
-    return payload;
-  }
-
-  getLabel(subSlice) {
-    const fd = subSlice.form_data;
-    if (fd.dimension) {
-      return fd.dimension;
-    }
-    return fd.metric ? fd.metric.label || fd.metric : null;
-  }
-
-  renderLegends(formData) {
-    const { categories, subSlices } = this.state;
-    if (_.difference(Object.keys(categories), Object.keys(subSlices)).length) {
-      return null;
-    }
-
-    return (
-      <div className="legends">
-        { Object.keys(categories).map((key, index) => <Legend
-          key={index}
-          inline={true}
-          title={`${subSlices[key].slice_name} (${this.getLabel(subSlices[key])})`}
-          categories={categories[key]}
-          toggleCategory={this.toggleCategory}
-          showSingleCategory={this.showSingleCategory}
-          format={subSlices[key].form_data.legend_format}
-        />)
-        }
-      </div>
-    )
+  addColor(data, fd) {
+    const c = fd.color_picker || { r: 0, g: 0, b: 0, a: 1 };
+    const colorFn = getScale(fd.color_scheme);
+    return data.map((d) => {
+      let color;
+      if (fd.dimension) {
+        color = hexToRGB(colorFn(d.cat_color), c.a * 255);
+        return { ...d, color };
+      }
+      return d;
+    });
   }
 
   loadLayers(formData, payload, viewport) {
@@ -226,12 +201,15 @@ class DeckMulti extends React.PureComponent {
 
           switch (vizType) {
             case 'deck_polygon':
-              metricLabel = subsliceCopy.form_data.metric ? subsliceCopy.form_data.metric.label || subsliceCopy.form_data.metric : null;
+              metricLabel = subsliceCopy.form_data.metric ?
+                subsliceCopy.form_data.metric.label || subsliceCopy.form_data.metric : null;
               accessor = d => d[metricLabel];
-              categories = getBuckets(subsliceCopy.form_data, filteredPayload.data.features, accessor);
+              categories = getBuckets(subsliceCopy.form_data,
+                filteredPayload.data.features, accessor);
               break;
             case 'deck_scatter':
-              categories = this.getScatterCategories(subsliceCopy.form_data, filteredPayload.data.features);
+              categories = this.getScatterCategories(subsliceCopy.form_data,
+                filteredPayload.data.features);
               break;
             default:
               categories = {};
@@ -267,9 +245,6 @@ class DeckMulti extends React.PureComponent {
               [subsliceCopy.slice_id]: json,
             },
           });
-        })
-        .catch((e) => {
-          console.log(e);
         });
     });
   }
@@ -300,6 +275,29 @@ class DeckMulti extends React.PureComponent {
     this.setState({ categories });
   }
 
+  renderLegends() {
+    const { categories, subSlices } = this.state;
+    if (_.difference(Object.keys(categories), Object.keys(subSlices)).length) {
+      return null;
+    }
+
+    return (
+      <div className="legends">
+        { Object.keys(categories).map((key, index) =>
+        (<Legend
+          key={index}
+          title={`${subSlices[key].slice_name} (${this.getLabel(subSlices[key])})`}
+          inline
+          categories={categories[key]}
+          toggleCategory={this.toggleCategory}
+          showSingleCategory={this.showSingleCategory}
+        />),
+          format={subSlices[key].form_data.legend_format}
+        )
+        }
+      </div>
+    );
+  }
   renderContainer(layers) {
     const { payload, formData, setControlValue } = this.props;
     const viewport = this.state.viewport || this.props.viewport;

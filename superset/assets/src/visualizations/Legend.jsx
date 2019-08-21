@@ -30,6 +30,8 @@ const propTypes = {
   showSingleCategory: PropTypes.func,
   format: PropTypes.string,
   position: PropTypes.oneOf([null, 'tl', 'tr', 'bl', 'br']),
+  inline: PropTypes.boolean,
+  title: PropTypes.string,
 };
 
 const defaultProps = {
@@ -38,6 +40,8 @@ const defaultProps = {
   showSingleCategory: () => {},
   format: null,
   position: 'tr',
+  inline: false,
+  title: null,
 };
 
 export default class Legend extends React.PureComponent {
@@ -65,6 +69,8 @@ export default class Legend extends React.PureComponent {
   }
 
   render() {
+    const { title, inline } = this.props;
+
     if (Object.keys(this.props.categories).length === 0 || this.props.position === null) {
       return null;
     }
@@ -87,14 +93,19 @@ export default class Legend extends React.PureComponent {
 
     const vertical = this.props.position.charAt(0) === 't' ? 'top' : 'bottom';
     const horizontal = this.props.position.charAt(1) === 'r' ? 'right' : 'left';
-    const style = {
+    let style = {
       position: 'absolute',
       [vertical]: '0px',
       [horizontal]: '10px',
     };
 
+    if (this.props.inline) {
+      style = null;
+    }
+
     return (
       <div className={'legend'} style={style}>
+        {!!title && <p>{title}</p>}
         <ul className={'categories'}>{categories}</ul>
       </div>
     );

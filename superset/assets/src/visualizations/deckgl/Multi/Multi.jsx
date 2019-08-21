@@ -26,15 +26,17 @@ import DeckGLContainer from '../DeckGLContainer';
 import { getExploreLongUrl } from '../../../explore/exploreUtils';
 import layerGenerators from '../layers';
 import { hexToRGB } from 'src/modules/colors';
-import { getScale } from '@superset-ui/color/lib/CategoricalColorNamespace';
 import { getBuckets } from '../utils';
 import sandboxedEval from 'src/modules/sandbox';
+import { CategoricalColorNamespace } from '@superset-ui/color';
 
 export const containerTypes = {
   default: 'Default',
   animatable: 'Animatable',
   categorical: 'Categorical',
 };
+
+const { getScale } = CategoricalColorNamespace;
 
 const propTypes = {
   formData: PropTypes.object.isRequired,
@@ -58,6 +60,7 @@ class DeckMulti extends React.PureComponent {
       subSlices: {},
       subSlicesLayers: {},
       payloads: {},
+      categories: {},
     };
     this.onViewportChange = this.onViewportChange.bind(this);
   }
@@ -87,13 +90,6 @@ class DeckMulti extends React.PureComponent {
     this.setState({ x, y, hoveredObject: object });
   }
 
-  getMainLayerFormData() {
-    const { subSlices } = this.state;
-
-    const mainLayerId = this.props.formData.container_main;
-    return subSlices[mainLayerId] ? subSlices[mainLayerId].form_data : {};
-  }
-
   getScatterCategories(formData, data) {
     const c = formData.color_picker || { r: 0, g: 0, b: 0, a: 1 };
     const fixedColor = [c.r, c.g, c.b, 255 * c.a];
@@ -110,31 +106,8 @@ class DeckMulti extends React.PureComponent {
         categories[d.cat_color] = { color, enabled: true };
       }
     });
+    console.log(categories);
     return categories;
-  }
- 
-  getCategories() {
-    const { payloads, subSlices } = this.state;
-    const formData = this.getMainLayerFormData();
-
-    const mainLayerId = this.props.formData.container_main;
-    const payload = payloads[mainLayerId];
-    if (payload) {
-      let metricLabel;
-      let accessor;
-
-      switch (subSlices[mainLayerId].form_data.viz_type) {
-        case 'deck_polygon':
-          metricLabel = formData.metric ? formData.metric.label || formData.metric : null;
-          accessor = d => d[metricLabel];
-          return getBuckets(formData, payload.data.features, accessor);
-        case 'deck_scatter':
-          return this.getScatterCategories(formData, payload.data.features);
-        default:
-          return {};
-      }
-    }
-    return {};
   }
 
   addColor(data, fd) {
@@ -174,8 +147,8 @@ class DeckMulti extends React.PureComponent {
     */
 
     // Show only categories selected in the legend
-    const cats = this.state.categories;
-    if (formData.dimension) {
+    const cats = this.state.categories[formData.slice_id];
+    if (cats && formData.dimension) {
       features = features.filter(d => cats[d.cat_color] && cats[d.cat_color].enabled);
     }
 
@@ -190,6 +163,37 @@ class DeckMulti extends React.PureComponent {
       return this.filterScatterPayload(formData, payload);
     }
     return payload;
+  }
+
+  getLabel(subSlice) {
+    const fd = subSlice.form_data;
+    if (fd.dimension) {
+      return fd.dimension;
+    }
+    return fd.metric ? fd.metric.label || fd.metric : null;
+  }
+
+  renderLegends(formData) {
+    const { categories, subSlices } = this.state;
+    console.log(categories, subSlices);
+    if (_.difference(Object.keys(categories), Object.keys(subSlices)).length) {
+      return null;
+    }
+
+    return (
+      <div className="legends">
+        { Object.keys(categories).map((key, index) => <Legend
+          key={index}
+          inline={true}
+          title={`${subSlices[key].slice_name} (${this.getLabel(subSlices[key])})`}
+          categories={categories[key]}
+          toggleCategory={this.toggleCategory}
+          showSingleCategory={this.showSingleCategory}
+          format={subSlices[key].form_data.legend_format}
+        />)
+        }
+      </div>
+    )
   }
 
   loadLayers(formData, payload, viewport) {
@@ -211,18 +215,46 @@ class DeckMulti extends React.PureComponent {
         },
       };
 
+      const vizType = subsliceCopy.form_data.viz_type;
+
       SupersetClient.get({
           endpoint: getExploreLongUrl(subsliceCopy.form_data, 'json'),
         })
         .then(({ json }) => {
-          const layer = layerGenerators[subsliceCopy.form_data.viz_type](
+          let categories;
+          let metricLabel;
+          let accessor;
+          const filteredPayload = this.filterPayload(subsliceCopy.form_data, json);
+
+          switch (vizType) {
+            case 'deck_polygon':
+              metricLabel = subsliceCopy.form_data.metric ? subsliceCopy.form_data.metric.label || subsliceCopy.form_data.metric : null;
+              accessor = d => d[metricLabel];
+              categories = getBuckets(subsliceCopy.form_data, filteredPayload.data.features, accessor);
+              break;
+            case 'deck_scatter':
+              categories = this.getScatterCategories(subsliceCopy.form_data, filteredPayload.data.features);
+              break;
+            default:
+              categories = {};
+          }
+
+          this.setState({
+            categories: {
+              ...this.state.categories,
+              [subsliceCopy.slice_id]: categories,
+            },
+          });
+
+          const layer = layerGenerators[vizType](
             subsliceCopy.form_data,
-            this.filterPayload(subsliceCopy.form_data, json),
+            filteredPayload,
             this.props.onAddFilter,
             this.props.setTooltip,
             [],
             this.props.onSelect,
           );
+
           this.setState({
             subSlicesLayers: {
               ...this.state.subSlicesLayers,
@@ -284,15 +316,7 @@ class DeckMulti extends React.PureComponent {
           mapStyle={formData.mapbox_style}
           setControlValue={setControlValue}
         />
-        {formData.container_type === containerTypes.categorical &&
-          <Legend
-            categories={this.getCategories()}
-            toggleCategory={this.toggleCategory}
-            showSingleCategory={this.showSingleCategory}
-            position={this.getMainLayerFormData().legend_position}
-            format={this.getMainLayerFormData().legend_format}
-          />
-        }
+        {this.renderLegends(formData)}
       </div>
     );
   }

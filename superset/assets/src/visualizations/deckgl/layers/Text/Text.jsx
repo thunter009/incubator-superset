@@ -19,6 +19,7 @@
 import { TextLayer } from 'deck.gl';
 import { CategoricalColorNamespace } from '@superset-ui/color';
 import { hexToRGB } from 'src/modules/colors';
+import { isString } from 'lodash';
 
 import { commonLayerProps } from '../common';
 import { createDeckGLComponent } from '../../factory';
@@ -49,7 +50,7 @@ function getText(d) {
     return getClusterName(d.properties.name) + `(${d.properties.point_count_abbreviated})`;
   }
   const name = d.properties ? d.properties.name : d.name;
-  const values = name !== null ? name.split(',') : [null];
+  const values = !isString(name) ? name.split(',') : [name];
   const numItems = values.length;
   const result = `${values[0]}`;
   return numItems > 1 ? result + `(+${numItems - 1})` : result;

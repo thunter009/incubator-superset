@@ -130,7 +130,7 @@ class DeckMulti extends React.PureComponent {
   }
 
   getLayers(values) {
-      const { subSlices, payloads, selectedItem } = this.state;
+      const { subSlices, payloads } = this.state;
       const layers = Object.keys(subSlices).map((key) => {
         const subSlice = subSlices[key];
         const payload = payloads[key];
@@ -145,10 +145,6 @@ class DeckMulti extends React.PureComponent {
           this.props.onSelect,
         );
     });
-
-    if (selectedItem) {
-      layers.push(this.generateNewMarkerLayer());
-    }
 
     return layers;
   }
@@ -248,28 +244,6 @@ class DeckMulti extends React.PureComponent {
     const updatedCategories = { ...this.state.categories };
     updatedCategories[sliceId] = categories;
     this.setState({ categories: updatedCategories });
-  }
-
-  generateNewMarkerLayer() {
-    return new IconLayer({
-      id: 'icon-layer',
-      data: [this.state.selectedItem],
-      pickable: true,
-      iconAtlas: '/static/assets/images/location-pin.png',
-      iconMapping: ICON_MAPPING,
-      getIcon: () => 'marker',
-      sizeScale: 15,
-      getPosition: d => d.center,
-      getSize: () => 5,
-      getColor: () => [0, 166, 153],
-      onHover: this.onHover.bind(this),
-    });
-  }
-
-  removeMarker() {
-    this.setState({
-      selectedItem: null,
-    });
   }
 
   filterPayload(formData, payload, values) {

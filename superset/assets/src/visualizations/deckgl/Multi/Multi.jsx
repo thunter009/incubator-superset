@@ -23,7 +23,6 @@ import Legend from 'src/visualizations/Legend';
 import fp from 'lodash/fp';
 import PropTypes from 'prop-types';
 import { SupersetClient } from '@superset-ui/connection';
-import Legend from 'src/visualizations/Legend';
 import sandboxedEval from 'src/modules/sandbox';
 import { CategoricalColorNamespace } from '@superset-ui/color';
 import { hexToRGB } from 'src/modules/colors';

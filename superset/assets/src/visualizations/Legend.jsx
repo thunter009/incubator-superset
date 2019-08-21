@@ -30,7 +30,7 @@ const propTypes = {
   showSingleCategory: PropTypes.func,
   format: PropTypes.string,
   position: PropTypes.oneOf([null, 'tl', 'tr', 'bl', 'br']),
-  inline: PropTypes.boolean,
+  inline: PropTypes.bool,
   title: PropTypes.string,
 };
 

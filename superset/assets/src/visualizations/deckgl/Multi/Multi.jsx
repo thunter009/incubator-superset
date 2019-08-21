@@ -16,16 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+/* eslint no-underscore-dangle: ["error", { "allow": ["", "__timestamp"] }] */
 import React from 'react';
 import _ from 'lodash';
+import Legend from 'src/visualizations/Legend';
+import fp from 'lodash/fp';
 import PropTypes from 'prop-types';
 import { SupersetClient } from '@superset-ui/connection';
 import Legend from 'src/visualizations/Legend';
 import sandboxedEval from 'src/modules/sandbox';
 import { CategoricalColorNamespace } from '@superset-ui/color';
 import { hexToRGB } from 'src/modules/colors';
+import { getPlaySliderParams } from 'src/modules/time';
 
-import DeckGLContainer from '../DeckGLContainer';
+// import DeckGLContainer from '../DeckGLContainer';
+import AnimatableDeckGLContainer from '../AnimatableDeckGLContainer';
+
 import { getExploreLongUrl } from '../../../explore/exploreUtils';
 import layerGenerators from '../layers';
 import { getBuckets } from '../utils';
@@ -50,12 +56,13 @@ const defaultProps = {
 class DeckMulti extends React.PureComponent {
   constructor(props) {
     super(props);
+
     this.state = {
       subSlices: {},
-      subSlicesLayers: {},
       payloads: {},
       categories: {},
     };
+    this.getLayers = this.getLayers.bind(this);
     this.onViewportChange = this.onViewportChange.bind(this);
   }
 
@@ -82,6 +89,10 @@ class DeckMulti extends React.PureComponent {
 
   onHover({ x, y, object }) {
     this.setState({ x, y, hoveredObject: object });
+  }
+
+  onValuesChange(values) {
+    console.log(values);
   }
 
   getScatterCategories(formData, data) {
@@ -111,14 +122,114 @@ class DeckMulti extends React.PureComponent {
     return fd.metric ? fd.metric.label || fd.metric : null;
   }
 
-  filterPayload(formData, payload) {
+  getLayers(values) {
+    console.log('get layers');
+    this.setState({ categories: {} });
+    const { subSlices, payloads, selectedItem } = this.state;
+    const layers = Object.keys(subSlices).map((key) => {
+      const subSlice = subSlices[key];
+      const payload = payloads[key];
+      const filteredPayload = this.filterPayload(subSlice.form_data, payload, values);
+      const vizType = subSlice.form_data.viz_type;
+      let categories;
+      let metricLabel;
+      let accessor;
+      switch (vizType) {
+        case 'deck_polygon':
+          metricLabel = subSlice.form_data.metric ?
+            subSlice.form_data.metric.label || subSlice.form_data.metric : null;
+          accessor = d => d[metricLabel];
+          categories = getBuckets(subSlice.form_data,
+            filteredPayload.data.features, accessor);
+          break;
+        case 'deck_scatter':
+          categories = this.getScatterCategories(subSlice.form_data,
+            filteredPayload.data.features);
+          break;
+        default:
+          categories = {};
+      }
+
+      this.setState({
+        categories: {
+          ...this.state.categories,
+          [subSlice.slice_id]: categories,
+        },
+      });
+
+      return layerGenerators[vizType](
+        subSlice.form_data,
+        filteredPayload,
+        this.props.onAddFilter,
+        this.props.setTooltip,
+        [],
+        this.props.onSelect,
+      );
+    });
+
+    if (selectedItem) {
+      layers.push(this.generateNewMarkerLayer());
+    }
+
+    return layers;
+  }
+
+  showSingleCategory(category) {
+    const categories = { ...this.state.categories };
+    /* eslint-disable no-param-reassign */
+    Object.values(categories).forEach((v) => { v.enabled = false; });
+    categories[category].enabled = true;
+    this.setState({ categories });
+  }
+
+  toggleCategory(category) {
+    const categoryState = this.state.categories[category];
+    const categories = {
+      ...this.state.categories,
+      [category]: {
+        ...categoryState,
+        enabled: !categoryState.enabled,
+      },
+    };
+
+    // if all categories are disabled, enable all -- similar to nvd3
+    if (Object.values(categories).every(v => !v.enabled)) {
+      /* eslint-disable no-param-reassign */
+      Object.values(categories).forEach((v) => { v.enabled = true; });
+    }
+    this.setState({ categories });
+  }
+
+  generateNewMarkerLayer() {
+    return new IconLayer({
+      id: 'icon-layer',
+      data: [this.state.selectedItem],
+      pickable: true,
+      iconAtlas: '/static/assets/images/location-pin.png',
+      iconMapping: ICON_MAPPING,
+      getIcon: () => 'marker',
+      sizeScale: 15,
+      getPosition: d => d.center,
+      getSize: () => 5,
+      getColor: () => [0, 166, 153],
+      onHover: this.onHover.bind(this),
+    });
+  }
+
+  removeMarker() {
+    this.setState({
+      selectedItem: null,
+    });
+  }
+
+  filterPayload(formData, payload, values) {
     if (formData.viz_type === 'deck_scatter') {
-      return this.filterScatterPayload(formData, payload);
+      return this.filterScatterPayload(formData, payload, values);
     }
     return payload;
   }
 
-  filterScatterPayload(formData, payload) {
+  filterScatterPayload(formData, payload, values) {
     let features = payload.data.features
     ? [...payload.data.features]
     : [];
@@ -132,14 +243,12 @@ class DeckMulti extends React.PureComponent {
       features = jsFnMutator(features);
     }
 
-    /*
     // Filter by time
     if (values[0] === values[1] || values[1] === this.end) {
       features = features.filter(d => d.__timestamp >= values[0] && d.__timestamp <= values[1]);
     } else {
       features = features.filter(d => d.__timestamp >= values[0] && d.__timestamp < values[1]);
     }
-    */
 
     // Show only categories selected in the legend
     const cats = this.state.categories[formData.slice_id];
@@ -167,7 +276,9 @@ class DeckMulti extends React.PureComponent {
   }
 
   loadLayers(formData, payload, viewport) {
-    this.setState({ subSlices: {}, subSlicesLayers: {}, viewport });
+    console.log('load layers');
+    this.setState({ subSlices: {}, payloads: {}, viewport, layersLoaded: false });
+    let layersToLoad = payload.data.slices.length;
     payload.data.slices.forEach((subslice) => {
       // Filters applied to multi_deck are passed down to underlying charts
       // note that dashboard contextual information (filter_immune_slices and such) aren't
@@ -185,54 +296,11 @@ class DeckMulti extends React.PureComponent {
         },
       };
 
-      const vizType = subsliceCopy.form_data.viz_type;
-
       SupersetClient.get({
           endpoint: getExploreLongUrl(subsliceCopy.form_data, 'json'),
         })
         .then(({ json }) => {
-          let categories;
-          let metricLabel;
-          let accessor;
-          const filteredPayload = this.filterPayload(subsliceCopy.form_data, json);
-
-          switch (vizType) {
-            case 'deck_polygon':
-              metricLabel = subsliceCopy.form_data.metric ?
-                subsliceCopy.form_data.metric.label || subsliceCopy.form_data.metric : null;
-              accessor = d => d[metricLabel];
-              categories = getBuckets(subsliceCopy.form_data,
-                filteredPayload.data.features, accessor);
-              break;
-            case 'deck_scatter':
-              categories = this.getScatterCategories(subsliceCopy.form_data,
-                filteredPayload.data.features);
-              break;
-            default:
-              categories = {};
-          }
-
           this.setState({
-            categories: {
-              ...this.state.categories,
-              [subsliceCopy.slice_id]: categories,
-            },
-          });
-
-          const layer = layerGenerators[vizType](
-            subsliceCopy.form_data,
-            filteredPayload,
-            this.props.onAddFilter,
-            this.props.setTooltip,
-            [],
-            this.props.onSelect,
-          );
-
-          this.setState({
-            subSlicesLayers: {
-              ...this.state.subSlicesLayers,
-              [subsliceCopy.slice_id]: layer,
-            },
             subSlices: {
               ...this.state.subSlices,
               [subsliceCopy.slice_id]: subsliceCopy,
@@ -242,6 +310,13 @@ class DeckMulti extends React.PureComponent {
               [subsliceCopy.slice_id]: json,
             },
           });
+          // this.updateSliderData();
+          layersToLoad--;
+          if (!layersToLoad) {
+            this.setState({
+              layersLoaded: true,
+            });
+          }
         });
     });
   }
@@ -296,37 +371,61 @@ class DeckMulti extends React.PureComponent {
       </div>
     );
   }
-  renderContainer(layers) {
-    const { payload, formData, setControlValue } = this.props;
-    const viewport = this.state.viewport || this.props.viewport;
-
-    return (
-      <div style={{ position: 'relative' }}>
-        <DeckGLContainer
-          mapboxApiAccessToken={payload.data.mapboxApiKey}
-          viewport={viewport}
-          onViewportChange={this.onViewportChange}
-          layers={layers}
-          mapStyle={formData.mapbox_style}
-          setControlValue={setControlValue}
-        />
-        {this.renderLegends(formData)}
-      </div>
-    );
-  }
-
   render() {
-    const { subSlicesLayers } = this.state;
+    const {
+      formData,
+      payload,
+      viewport: propsViewport,
+      setControlValue,
+    } = this.props;
 
-    const layers = Object.values(subSlicesLayers);
+    const timestamps = fp.flow([
+      fp.map(slicePayload => slicePayload.data.features || []),
+      fp.flattenDeep,
+      fp.map(f => f.__timestamp),
+      fp.filter(timestamp => !!timestamp),
+    ])(this.state.payloads);
+    // the granularity has to be read from the payload form_data, not the
+    // props formData which comes from the instantaneous controls state
+    const granularity = (
+      this.props.formData.time_grain_sqla ||
+      this.props.formData.granularity ||
+      'P1D'
+    );
 
-    if (this.state.selectedItem) {
-      layers.push(this.generateNewMarkerLayer());
-    }
+    const {
+      start,
+      end,
+      getStep,
+      values,
+      disabled,
+    } = getPlaySliderParams(timestamps, granularity);
+
+    const {
+      layersLoaded,
+      viewport: stateViewport,
+    } = this.state;
 
     return (
       <div>
-        {this.renderContainer(layers)}
+        {layersLoaded && <div style={{ position: 'relative' }}>
+          <AnimatableDeckGLContainer
+            getLayers={this.getLayers}
+            start={start}
+            end={end}
+            getStep={getStep}
+            values={values}
+            onValuesChange={this.onValuesChange}
+            disabled={disabled}
+            viewport={stateViewport || propsViewport}
+            onViewportChange={this.onViewportChange}
+            mapboxApiAccessToken={payload.data.mapboxApiKey}
+            mapStyle={formData.mapbox_style}
+            setControlValue={setControlValue}
+            aggregation
+          />
+          {this.renderLegends(formData)}
+        </div>}
       </div>
     );
   }

@@ -21,12 +21,9 @@ import _ from 'lodash';
 import PropTypes from 'prop-types';
 import { SupersetClient } from '@superset-ui/connection';
 import Legend from 'src/visualizations/Legend';
-import PropTypes from 'prop-types';
 import sandboxedEval from 'src/modules/sandbox';
 import { CategoricalColorNamespace } from '@superset-ui/color';
 import { hexToRGB } from 'src/modules/colors';
-import { IconLayer } from 'deck.gl';
-import { SupersetClient } from '@superset-ui/connection';
 
 import DeckGLContainer from '../DeckGLContainer';
 import { getExploreLongUrl } from '../../../explore/exploreUtils';
@@ -266,6 +263,7 @@ class DeckMulti extends React.PureComponent {
     }
     this.setState({ categories });
   }
+
   showSingleCategory(category) {
 
     const categories = { ...this.state.categories };
@@ -291,8 +289,8 @@ class DeckMulti extends React.PureComponent {
           categories={categories[key]}
           toggleCategory={this.toggleCategory}
           showSingleCategory={this.showSingleCategory}
-        />),
           format={subSlices[key].form_data.legend_format}
+        />),
         )
         }
       </div>
@@ -322,15 +320,14 @@ class DeckMulti extends React.PureComponent {
 
     const layers = Object.values(subSlicesLayers);
 
+    if (this.state.selectedItem) {
+      layers.push(this.generateNewMarkerLayer());
+    }
+
     return (
-      <DeckGLContainer
-        mapboxApiAccessToken={payload.data.mapboxApiKey}
-        viewport={this.state.viewport || this.props.viewport}
-        onViewportChange={this.onViewportChange}
-        layers={layers}
-        mapStyle={formData.mapbox_style}
-        setControlValue={setControlValue}
-      />
+      <div>
+        {this.renderContainer(layers)}
+      </div>
     );
   }
 }

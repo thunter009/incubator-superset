@@ -28,8 +28,7 @@ export default {
       expanded: true,
       controlSetRows: [
         ['spatial', 'text'],
-        ['row_limit', 'clusterize'],
-        ['filter_nulls', null],
+        ['row_limit', 'filter_nulls'],
         ['adhoc_filters'],
       ],
     },
@@ -43,8 +42,9 @@ export default {
     {
       label: t('Text'),
       controlSetRows: [
-        ['color_picker', 'grade_colors'],
-        [null, 'color_scheme'],
+        ['color_picker', 'clusterize'],
+        ['grade_colors', 'color_scheme'],
+        ['enable_gradient', 'color_picker_alt'],
       ],
     },
     {

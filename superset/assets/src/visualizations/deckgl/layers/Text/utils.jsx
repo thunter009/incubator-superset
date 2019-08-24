@@ -1,4 +1,5 @@
 import { flow, countBy, entries, partialRight, maxBy, head, last, filter, isString } from 'lodash';
+import * as fp from 'lodash/fp';
 import Supercluster from 'supercluster';
 
 export function getClusterName(name) {
@@ -30,4 +31,12 @@ export function indexClusters(payload) {
   features = filter(features, f => f.properties.name !== null);
   clustersIndex.load(features);
   return clustersIndex;
+}
+
+export function getMaxClusterSize(index) {
+  const maxClusterSize = fp.flow([
+    fp.map(indexLevel => maxBy(indexLevel.points, 'numPoints')),
+    fp.maxBy('numPoints'),
+  ])(index.trees);
+  return maxClusterSize.numPoints;
 }

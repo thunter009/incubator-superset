@@ -4,7 +4,7 @@ import Supercluster from 'supercluster';
 
 const dummyCluster = {
   numPoints: 1,
-}
+};
 
 export function getClusterName(name) {
   return isString(name)
@@ -57,7 +57,7 @@ export function getMinClusterSize(index, zoom = null) {
   const comparators = {
     lodash: minBy,
     fp: fp.minBy,
-  }
+  };
   return getClusterSizeByComparator(index, zoom, comparators);
 }
 
@@ -65,6 +65,7 @@ export function getMaxClusterSize(index, zoom = null) {
   const comparators = {
     lodash: maxBy,
     fp: fp.maxBy,
-  }
+  };
+
   return getClusterSizeByComparator(index, zoom, comparators);
 }

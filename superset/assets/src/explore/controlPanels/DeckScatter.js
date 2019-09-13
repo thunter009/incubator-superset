@@ -48,6 +48,7 @@ export default {
       controlSetRows: [
         ['mapbox_style', 'viewport'],
         ['autozoom', null],
+        ['legend_position', 'legend_format'],
       ],
     },
     {
@@ -61,8 +62,8 @@ export default {
     {
       label: t('Point Color'),
       controlSetRows: [
-        ['color_picker', 'legend_position'],
-        [null, 'legend_format'],
+        ['color_picker', null],
+        
         ['dimension', 'color_scheme', 'label_colors'],
       ],
     },

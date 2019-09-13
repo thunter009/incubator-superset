@@ -36,6 +36,7 @@ export default {
       controlSetRows: [
         ['mapbox_style', 'viewport'],
         ['autozoom', null],
+        ['legend_position', 'legend_format'],
       ],
     },
     {
@@ -43,8 +44,7 @@ export default {
       controlSetRows: [
         ['color_picker', 'target_color_picker'],
         ['dimension', 'color_scheme', 'label_colors'],
-        ['stroke_width', 'legend_position'],
-        ['legend_format', null],
+        ['stroke_width', null],
       ],
     },
     {

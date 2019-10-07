@@ -283,6 +283,30 @@ export const controls = {
     renderTrigger: true,
   },
 
+  color_picker_alt: {
+    label: t('Secondary Color'),
+    description: t('Use this to define second gradient color'),
+    type: 'ColorPickerControl',
+    default: PRIMARY_COLOR,
+    renderTrigger: true,
+  },
+
+  enable_gradient: {
+    type: 'CheckboxControl',
+    label: t('Enable gradient'),
+    description: t('Makes each item in it\'s own color grade between fixed and secondary color'),
+    default: false,
+    renderTrigger: true,
+  },
+
+  per_zoom_level: {
+    type: 'CheckboxControl',
+    label: t('Per zoom level'),
+    description: t('Assigns colors in range from fixed to secondary color for current zoom level'),
+    default: false,
+    renderTrigger: true,
+  },
+
   target_color_picker: {
     label: t('Target Color'),
     description: t('Color of the target location'),

@@ -45,6 +45,7 @@ export default {
         ['color_picker', 'clusterize'],
         ['grade_colors', 'color_scheme'],
         ['enable_gradient', 'color_picker_alt'],
+        ['per_zoom_level', null],
       ],
     },
     {

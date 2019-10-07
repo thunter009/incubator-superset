@@ -70,7 +70,9 @@ function getColor(d, fd) {
     const colorFn = getScale(fd.color_scheme);
     return hexToRGB(colorFn(d.cat_color), cp.a * 255);
   }
-  return (fd.clusterize && fd.enable_gradient) ? d.color : [cp.r, cp.g, cp.b, cp.a * 255];
+  return (fd.clusterize && fd.enable_gradient && d.color)
+    ? d.color
+    : [cp.r, cp.g, cp.b, cp.a * 255];
 }
 
 function getPosition(d) {
